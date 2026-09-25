@@ -1,0 +1,5 @@
+.pwa-action { white-space: nowrap; }
+.connection-status { color: var(--muted); font-size: 11px; white-space: nowrap; }
+html.offline .connection-status { color: var(--amber); }
+@media (display-mode: standalone) { .topbar { padding-top: max(18px, env(safe-area-inset-top)); } .sidebar { padding-bottom: max(25px, env(safe-area-inset-bottom)); } }
+@media (max-width: 560px) { .pwa-action { padding: 8px 9px; font-size: 12px; } .connection-status { display: none; } .top-actions { gap: 5px; } }
