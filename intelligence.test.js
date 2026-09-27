@@ -1,55 +1,23 @@
+/* Clarity prototype test suite. Run with: node --test intelligence.test.js */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const intelligence = require('./intelligence.js');
 
-test('behavioral analysis flags evasive wording', () => {
-  const result = intelligence.analyzeBehavioralTraits([
-    { name: 'Alex', role: 'Staff', note: 'I forgot and I thought it was probably fine.' },
-    { name: 'Sam', role: 'Witness', note: 'I saw everything clearly.' }
-  ], 'professional');
-
-  assert.ok(result[0].risk >= 30);
-  assert.match(result[0].summary, /evasive|uncertain|defensive|control/i);
+test('behaviour cues are caveated and never treated as proof', () => {
+  const result = intelligence.assessBehaviour([{ name: 'A', note: 'looked away and said maybe' }], 'professional');
+  assert.match(result[0].summary, /not a lie detector/i);
 });
-
-test('contradictions are surfaced when access and timing are not independently confirmed', () => {
-  const contradictions = intelligence.detectContradictions(
-    [
-      ['14:05', 'Alex says they leave early', 'Statement'],
-      ['14:10', 'Cash drawer reportedly opened', 'Witness statement']
-    ],
-    [
-      { title: 'Front desk statement', kind: 'Statement', detail: 'Cash looked present', strength: 'Moderate' }
-    ],
-    [
-      { name: 'Alex', role: 'Staff', note: 'Had key access and left at 14:05.' }
-    ]
-  );
-
-  assert.ok(contradictions.length >= 1);
-  assert.match(contradictions[0].title, /Access|Movement|Reliance/i);
+test('timeline checks find missing sources', () => {
+  const result = intelligence.analyseTimeline([['10:00', 'Item moved', '']]);
+  assert.ok(result.some((item) => /source/i.test(item.label)));
 });
-
-test('kids mode produces gentle, action-oriented questions', () => {
-  const questions = intelligence.buildSmartQuestions(
-    [{ name: 'Alex', role: 'Staff', note: 'I left at 14:05.' }],
-    [['14:05', 'Left early', 'statement']],
-    [{ title: 'Entry log', kind: 'Record', detail: 'someone moved near reception', strength: 'Moderate' }],
-    { location: 'kitchen' },
-    'kids'
-  );
-
-  assert.ok(questions.some((q) => /what did you see first|independent fact|near the/i.test(q.toLowerCase())));
+test('question generator creates alternative-explanation prompts', () => {
+  const result = intelligence.generateQuestions({ case: { location: 'kitchen' }, events: [] }, 'professional');
+  assert.ok(result.some((question) => /alternative/i.test(question)));
 });
-
-test('full analysis returns structured sections for a case', () => {
-  const analysis = intelligence.analyze({
-    case: { title: 'Missing cookies', location: 'kitchen', summary: 'Cookies vanished after school.' },
-    people: [{ name: 'Child A', role: 'Student', note: 'I forgot and thought I heard a crunch.' }],
-    evidence: [{ title: 'Crumbs', kind: 'Physical', detail: 'Chocolate on the table', strength: 'Moderate' }],
-    events: [['15:00', 'Cookies seen on plate', 'Observation'], ['15:20', 'Plate is empty', 'Observation']],
-  }, 'professional');
-
-  assert.ok(analysis.sections.length >= 4);
-  assert.ok(typeof analysis.summary === 'string');
+test('complete analysis returns metrics and structured sections', () => {
+  const result = intelligence.analyze({ case: { title: 'Cookies' }, evidence: [], events: [], people: [], hypotheses: [] }, 'kids');
+  assert.equal(result.sections.length, 6);
+  assert.equal(typeof result.metrics.evidenceQuality, 'number');
+  assert.match(result.disclaimer, /worried|forget/i);
 });
