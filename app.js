@@ -40,6 +40,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 function persist() {
   localStorage.setItem('clarity-mode', state.mode);
+  document.documentElement.classList.toggle('kids-mode', state.mode === 'kids');
 }
 
 function analysisSummaryHtml(analysis) {
@@ -53,31 +54,39 @@ function analysisSummaryHtml(analysis) {
   `).join('');
 
   return `
+    <div class="analysis-disclaimer">
+      ⓘ ${esc(analysis.disclaimer)}
+    </div>
     <div class="analysis-shell">
       <div class="notice">
-        <strong>${esc(analysis.headline)}:</strong> ${esc(analysis.summary)}
+        <strong>${esc(analysis.headline)}</strong><br/>
+        <span style="font-size: 13px; color: var(--muted); display: block; margin-top: 6px;">${esc(analysis.summary)}</span>
       </div>
-      <div class="meta-row">
-        <span class="pill">${esc(analysis.status)}</span>
+      <div class="grid three">
+        <div class="metric-box"><div class="label">Evidence Quality</div><div class="value">${analysis.metrics.evidenceQuality}%</div></div>
+        <div class="metric-box"><div class="label">Verification Gaps</div><div class="value">${analysis.metrics.gaps}</div></div>
+        <div class="metric-box"><div class="label">Key Questions</div><div class="value">${analysis.metrics.questions}</div></div>
       </div>
-      <div class="grid two">${cards}</div>
+      ${cards}
     </div>
   `;
 }
 
 function app() {
+  persist();
+  document.documentElement.classList.toggle('kids-mode', state.mode === 'kids');
   document.getElementById('app').innerHTML = `
     <div class="shell">
       <aside class="sidebar">
-        <div class="brand"><span class="brand-mark">◈</span> Clarity</div>
+        <div class="brand"><span class="brand-mark">${state.mode === 'kids' ? '🔍' : '◆'}</span> Clarity</div>
         <div class="mode-toggle-wrap">
           <button class="mode-toggle" onclick="toggleMode()">
-            ${state.mode === 'kids' ? '👨‍👩‍👧 Switch to adult mode' : '👶 Switch to kids mode'}
+            ${state.mode === 'kids' ? '👨‍👩‍👧 Adult Mode' : '👧 Kids Mode'}
           </button>
         </div>
         <nav class="nav">
           ${nav('overview', 'Overview', '◉')}
-          ${nav('case', 'Case file', '▣')}
+          ${nav('case', 'Case', '▣')}
           ${nav('timeline', 'Timeline', '⏱')}
           ${nav('evidence', 'Evidence', '◯')}
           ${nav('questions', 'Questions', '❓')}
@@ -87,14 +96,20 @@ function app() {
       </aside>
 
       <main class="main">
-        ${renderView()}
+        <div class="main-header">
+          <h1>${state.mode === 'kids' ? '🔍 Mystery Solver' : '◆ Clarity'}</h1>
+          <p class="subtitle">${state.mode === 'kids' ? 'Fair play. Truth-first.' : 'Evidence-first case analysis.'}</p>
+        </div>
+        <div class="main-content">
+          ${renderView()}
+        </div>
       </main>
     </div>
   `;
 }
 
 function nav(id, label, icon) {
-  return `<button class="${state.view === id ? 'active' : ''}" onclick="go('${id}')">${icon}&nbsp; ${label}</button>`;
+  return `<button class="${state.view === id ? 'active' : ''}" onclick="go('${id}')">${icon} ${label}</button>`;
 }
 
 function go(v) {
@@ -119,7 +134,13 @@ function renderView() {
 }
 
 function heading(kicker, title, sub) {
-  return `<div class="small muted">${esc(kicker.toUpperCase())}</div><h1>${esc(title)}</h1><p class="subtitle">${esc(sub)}</p>`;
+  return `
+    <div class="heading">
+      <span class="kicker">${esc(kicker)}</span>
+      <h1>${esc(title)}</h1>
+      <p class="subtitle">${esc(sub)}</p>
+    </div>
+  `;
 }
 
 function overview() {
@@ -127,17 +148,16 @@ function overview() {
   const analysis = window.ClarityIntelligence ? window.ClarityIntelligence.analyze(state, state.mode) : null;
 
   return `
-    ${heading(kid ? 'KIDS MODE • FAIR PLAY DESK' : 'CASE OVERVIEW', kid ? 'Let's work out what happened' : 'Good afternoon, Jack', kid ? 'Everyone gets a chance to explain, and we check for facts before conclusions.' : 'This workspace is deliberately evidence-led and balanced.')} 
+    ${heading(kid ? '🔍 Fair Play Desk' : '◆ Case Overview', kid ? 'Let\'s work it out' : 'Good afternoon', kid ? 'Everyone gets a turn. We check facts before deciding.' : 'Evidence-led and balanced.')}
     <div class="summary-grid">
       <div class="card">
-        <div class="small muted">CASE</div>
         <h3>${esc(state.case.title)}</h3>
         <p>${esc(state.case.summary)}</p>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 12px;">📍 ${esc(state.case.location)} · ${esc(state.case.date)}</p>
       </div>
       <div class="card">
-        <div class="small muted">STATUS</div>
-        <h3>${kid ? 'Gentle and fair' : 'Evidence-first'}</h3>
-        <p>${analysis ? esc(analysis.summary) : 'Keep gathering independent corroboration.'}</p>
+        <h3>${kid ? '✓ Gentle Status' : '✓ Status'}</h3>
+        <p>${analysis ? esc(analysis.summary) : 'Keep gathering independent facts.'}</p>
       </div>
     </div>
     ${analysis ? analysisSummaryHtml(analysis) : ''}
@@ -145,17 +165,23 @@ function overview() {
 }
 
 function caseView() {
-  return heading('CASE FILE', 'Case details', 'Keep observations, assumptions and decisions clearly separated.') + `
+  const kid = state.mode === 'kids';
+  return `
+    ${heading(kid ? '📋 Case Info' : '📋 Case File', 'Details', 'Keep facts, assumptions, and decisions separate.')}
     <div class="card">
       <form onsubmit="saveCase(event)">
-        <div class="grid two">
+        <div class="form-row">
           <label>Title<input name="title" value="${esc(state.case.title)}" /></label>
           <label>Type<input name="type" value="${esc(state.case.type)}" /></label>
+        </div>
+        <div class="form-row">
           <label>Location<input name="location" value="${esc(state.case.location)}" /></label>
-          <label>Date<input name="date" value="${esc(state.case.date)}" /></label>
+          <label>Date / Time<input name="date" value="${esc(state.case.date)}" /></label>
         </div>
         <label>Summary<textarea name="summary">${esc(state.case.summary)}</textarea></label>
-        <button type="submit">Save case</button>
+        <div style="margin-top: 16px;">
+          <button type="submit" class="btn primary">Save Case</button>
+        </div>
       </form>
     </div>
   `;
@@ -166,17 +192,21 @@ function peopleHtml() {
     <div class="list-item">
       <div>
         <strong>${esc(p.name)}</strong>
-        <p>${esc(p.role)} · ${esc(p.note)}</p>
+        <p>${esc(p.role)}</p>
+        <p>${esc(p.note)}</p>
       </div>
-      <button class="danger" onclick="removePerson(${i})">Remove</button>
+      <button class="btn danger" onclick="removePerson(${i})">✕</button>
     </div>
   `).join('')}</div>`;
 }
 
 function timelineView() {
-  return heading('TIMELINE', 'What happened, and when?', 'Separate recorded events from estimates. Unknown times are allowed.') + `
+  const kid = state.mode === 'kids';
+  return `
+    ${heading(kid ? '⏱ What Happened' : '⏱ Timeline', 'When?', 'Recorded times, estimates, and sources.')}
     <div class="grid two">
       <div class="card">
+        <h3>Events</h3>
         <div class="list">
           ${state.events.map((event, i) => `
             <div class="list-item">
@@ -188,52 +218,58 @@ function timelineView() {
             </div>
           `).join('')}
         </div>
-        <button onclick="addEvent()">Add event</button>
+        <button class="btn primary" style="width: 100%; margin-top: 12px;" onclick="addEvent()">+ Event</button>
       </div>
       <div class="card">
         <h3>People</h3>
         ${peopleHtml()}
-        <button onclick="addPerson()">Add person</button>
+        <button class="btn primary" style="width: 100%; margin-top: 12px;" onclick="addPerson()">+ Person</button>
       </div>
     </div>
   `;
 }
 
 function evidenceView() {
-  return heading('EVIDENCE', 'Evidence register', 'Record what was observed, where it came from and how strong the source is—not what it proves by itself.') + `
+  const kid = state.mode === 'kids';
+  return `
+    ${heading(kid ? '📸 What We Know' : '📸 Evidence', 'The Record', 'What was seen, found, or recorded—not what it proves.')}
     <div class="card">
       <div class="list">
         ${state.evidence.map((item, i) => `
           <div class="list-item">
             <div>
               <strong>${esc(item.title)}</strong>
-              <p>${esc(item.kind)} · ${esc(item.strength)} · ${esc(item.detail)}</p>
+              <p>${esc(item.kind)} · Strength: ${esc(item.strength)}</p>
+              <p>${esc(item.detail)}</p>
             </div>
-            <button class="danger" onclick="removeEvidence(${i})">Remove</button>
+            <button class="btn danger" onclick="removeEvidence(${i})">✕</button>
           </div>
         `).join('')}
       </div>
-      <button onclick="addEvidence()">Add evidence</button>
+      <button class="btn primary" style="width: 100%; margin-top: 12px;" onclick="addEvidence()">+ Evidence</button>
     </div>
   `;
 }
 
 function questionsView() {
-  return heading('QUESTIONS', 'Questions to resolve', 'Neutral prompts generated from gaps and contradictions. Record answers with their source.') + `
+  const kid = state.mode === 'kids';
+  return `
+    ${heading(kid ? '❓ What to Check' : '❓ Questions', 'To Resolve', 'Gaps and contradictions to verify.')}
     <div class="grid two">
       <div class="card">
+        <h3>Questions</h3>
         <div class="list">
           ${state.questions.map((q, i) => `
             <div class="list-item">
               <div><p>${esc(q)}</p></div>
-              <button class="danger" onclick="answerQuestion(${i})">Answered</button>
+              <button class="btn success" onclick="answerQuestion(${i})">✓</button>
             </div>
           `).join('')}
         </div>
-        <button onclick="addQuestion()">Add question</button>
+        <button class="btn primary" style="width: 100%; margin-top: 12px;" onclick="addQuestion()">+ Question</button>
       </div>
       <div class="card">
-        <h3>Hypotheses</h3>
+        <h3>Working Explanations</h3>
         <div class="list">
           ${state.hypotheses.map(([h, score]) => `
             <div class="list-item">
@@ -248,34 +284,43 @@ function questionsView() {
 }
 
 function analysisView() {
+  const kid = state.mode === 'kids';
   const analysis = window.ClarityIntelligence ? window.ClarityIntelligence.analyze(state, state.mode) : {
-    headline: 'No analysis engine loaded',
-    summary: 'This version could not load the intelligence layer.',
+    headline: 'No analysis loaded',
+    summary: 'The intelligence layer did not load.',
     sections: [],
     status: 'Unavailable',
+    disclaimer: 'Check your connection or try refreshing.',
+    metrics: { evidenceQuality: 0, gaps: 0, questions: 0 }
   };
 
-  return heading('INTELLIGENCE', state.mode === 'kids' ? 'Gentle reasoning and truth checks' : 'Behavioural and deductive analysis', 'Look for patterns, access, motive, time, and independent confirmation without turning a hunch into a verdict.') + analysisSummaryHtml(analysis);
+  return heading(kid ? '🧩 Gentle Reasoning' : '🧩 Deductive Analysis', kid ? 'Truth Checks' : 'Behavioural & Scene Analysis', kid ? 'Looking for facts and fair explanations.' : 'Looking for verification, not verdicts.') + analysisSummaryHtml(analysis);
 }
 
 function reportView() {
+  const kid = state.mode === 'kids';
   const analysis = window.ClarityIntelligence ? window.ClarityIntelligence.analyze(state, state.mode) : null;
-  return heading('CASE REPORT', 'Review before you act', 'A neutral, exportable summary. It deliberately avoids naming a culprit.') + `
-    <div class="report-block">
+  return `
+    ${heading(kid ? '📄 Fair Summary' : '📄 Case Report', 'Review', 'Neutral, exportable summary.')}
+    <div class="card">
+      <h3>Case Overview</h3>
+      <p>${esc(state.case.summary)}</p>
+    </div>
+    ${analysis ? `
       <div class="card">
-        <h3>Overview</h3>
-        <p>${esc(state.case.summary)}</p>
-      </div>
-      <div class="card">
-        <h3>Key findings</h3>
-        <ul>
-          ${analysis ? analysis.sections.map((section) => `<li><strong>${esc(section.heading)}:</strong> ${esc(section.items[0])}</li>`).join('') : '<li>Analysis is unavailable.</li>'}
+        <h3>Key Findings</h3>
+        <ul class="bullet-list">
+          ${analysis.sections.map((section) => `<li><strong>${esc(section.heading)}:</strong> ${esc(section.items[0] || '')}</li>`).join('')}
         </ul>
       </div>
       <div class="card">
-        <h3>Safe conclusion</h3>
-        <p>${analysis ? esc(analysis.summary) : 'Continue gathering verification before making a judgement.'}</p>
+        <h3>${kid ? 'Safe Next Step' : 'Recommended Next Step'}</h3>
+        <p>${esc(analysis.summary)}</p>
       </div>
+    ` : ''}
+    <div class="quick-actions">
+      <button class="btn primary" onclick="window.print()">🖨️ Print / PDF</button>
+      <button class="btn" onclick="shareCase()">📤 Share</button>
     </div>
   `;
 }
@@ -287,19 +332,13 @@ function saveCase(e) {
   go('overview');
 }
 
-function newCase() {
-  if (!confirm('Start a new case? The current case stays in this browser until replaced.')) return;
-  state.case = { title: 'Untitled case', type: 'Incident', location: '', date: 'Today', summary: '' };
-  app();
-}
-
 function addPerson() {
-  const name = prompt('Person name or neutral label:');
+  const name = prompt('Person name or label:');
   if (!name) return;
   state.people.push({
     name,
-    role: prompt('Role (witness, reporter, visitor, etc.):') || 'Person involved',
-    note: prompt('Relevant information or statement:') || 'No notes recorded yet.'
+    role: prompt('Role (witness, staff, etc.):') || 'Person involved',
+    note: prompt('What did they say or do?:') || 'No notes yet.'
   });
   app();
 }
@@ -314,8 +353,8 @@ function addEvent() {
   if (!time) return;
   state.events.push([
     time,
-    prompt('What happened?') || 'Unspecified event',
-    prompt('Source (record, statement, observation):') || 'Unspecified source'
+    prompt('What happened?') || 'Event',
+    prompt('Source (record, statement, observation):') || 'Unspecified'
   ]);
   app();
 }
@@ -331,8 +370,8 @@ function addEvidence() {
   state.evidence.push({
     title,
     kind: prompt('Type (document, statement, photo, record):') || 'Uncategorised',
-    strength: prompt('How reliable is this source? Strong / Moderate / Weak:') || 'Moderate',
-    detail: prompt('Describe the evidence:') || 'No detail recorded.'
+    strength: prompt('Reliability? (Strong / Moderate / Weak):') || 'Moderate',
+    detail: prompt('Describe:') || 'No detail.'
   });
   app();
 }
@@ -348,6 +387,16 @@ function addQuestion() {
 function answerQuestion(i) {
   state.questions.splice(i, 1);
   app();
+}
+
+function shareCase() {
+  const caseText = `Case: ${state.case.title}\nLocation: ${state.case.location}\nDate: ${state.case.date}\n\nSummary: ${state.case.summary}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Clarity Case', text: caseText });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(caseText);
+    alert('Case copied to clipboard.');
+  }
 }
 
 app();
