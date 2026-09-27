@@ -1,29 +1,76 @@
-/* Progressive web app enhancements: install prompt, connection status and share action. */
+/* Progressive web app enhancements: install, sharing, status, and update readiness. */
 (() => {
-  let deferredPrompt;
-  const installButton = () => document.querySelector('[data-install-app]');
-  const refreshInstall = () => { const button = installButton(); if (button) button.hidden = !deferredPrompt; };
-  window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredPrompt = event; refreshInstall(); });
-  window.addEventListener('appinstalled', () => { deferredPrompt = null; refreshInstall(); });
-  window.addEventListener('online', () => document.documentElement.classList.remove('offline'));
-  window.addEventListener('offline', () => document.documentElement.classList.add('offline'));
+  let deferredPrompt = null;
+  let toolbar;
+  let installButton;
+  let status;
+
+  const setOnlineState = () => {
+    const online = navigator.onLine;
+    document.documentElement.classList.toggle('offline', !online);
+    if (status) status.textContent = online ? '● Online' : '○ Offline — local shell available';
+  };
+
+  const install = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (installButton) installButton.hidden = true;
+  };
+
+  const share = async () => {
+    const data = { title: 'Clarity', text: 'Clarity evidence-first case workspace', url: location.href };
+    if (navigator.share) {
+      try { await navigator.share(data); } catch (_) { /* User cancelled sharing. */ }
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(location.href);
+      status.textContent = 'Link copied';
+      setTimeout(setOnlineState, 1800);
+    }
+  };
+
+  const createToolbar = () => {
+    if (document.querySelector('.pwa-toolbar')) return;
+    toolbar = document.createElement('div');
+    toolbar.className = 'pwa-toolbar';
+
+    installButton = document.createElement('button');
+    installButton.className = 'btn light pwa-install';
+    installButton.textContent = '⇩ Install app';
+    installButton.hidden = !deferredPrompt;
+    installButton.addEventListener('click', install);
+
+    const shareButton = document.createElement('button');
+    shareButton.className = 'btn ghost';
+    shareButton.textContent = '↗ Share';
+    shareButton.addEventListener('click', share);
+
+    status = document.createElement('span');
+    status.className = 'pwa-status';
+    toolbar.append(installButton, shareButton, status);
+    document.body.appendChild(toolbar);
+    setOnlineState();
+  };
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    if (installButton) installButton.hidden = false;
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    if (installButton) installButton.hidden = true;
+  });
+  window.addEventListener('online', setOnlineState);
+  window.addEventListener('offline', setOnlineState);
+
   window.addEventListener('DOMContentLoaded', () => {
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
-    const observer = new MutationObserver(() => {
-      const actions = document.querySelector('.top-actions');
-      if (!actions || actions.querySelector('[data-install-app]')) return;
-      const install = document.createElement('button');
-      install.className = 'btn light pwa-action'; install.dataset.installApp = ''; install.hidden = !deferredPrompt;
-      install.textContent = '⇩ Install app';
-      install.addEventListener('click', async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; refreshInstall(); });
-      actions.prepend(install);
-      const share = document.createElement('button');
-      share.className = 'btn ghost pwa-action'; share.textContent = '↗ Share';
-      share.addEventListener('click', async () => { const data = { title: 'Clarity', text: 'Clarity evidence-first case workspace', url: location.href }; if (navigator.share) await navigator.share(data); else await navigator.clipboard?.writeText(location.href); });
-      actions.prepend(share);
-      const status = document.createElement('span'); status.className = 'connection-status'; status.textContent = navigator.onLine ? '● Online' : '○ Offline';
-      actions.append(status);
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    createToolbar();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js', { scope: './' }).catch((error) => {
+        console.warn('Clarity service worker registration failed', error);
+      });
+    }
   });
 })();
