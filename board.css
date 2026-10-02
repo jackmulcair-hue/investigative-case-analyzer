@@ -1,0 +1,186 @@
+/* Evidence board — noir corkboard with pinned nodes and red string links. */
+.board-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.board-link-btn.active {
+  background: linear-gradient(180deg, var(--accent-light), var(--accent));
+  color: #1a1408;
+  border-color: var(--accent);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.board-hint {
+  font-family: var(--type);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.board-canvas {
+  position: relative;
+  width: 100%;
+  height: 560px;
+  border: 1px solid rgba(200, 151, 58, 0.22);
+  border-radius: 6px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  background-color: #11141b;
+  background-image: radial-gradient(rgba(200, 151, 58, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+html.kids-mode .board-canvas {
+  background-color: #fff3e0;
+  background-image: radial-gradient(rgba(230, 126, 34, 0.16) 1px, transparent 1px);
+  box-shadow: inset 0 0 40px rgba(230, 126, 34, 0.12);
+  border-color: rgba(230, 126, 34, 0.3);
+}
+
+.board-canvas.link-mode {
+  cursor: crosshair;
+}
+.board-canvas.link-mode .board-node {
+  cursor: pointer;
+}
+
+.board-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.board-link-line {
+  fill: none;
+  stroke: #c0392b;
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(192, 57, 43, 0.55));
+  pointer-events: none;
+}
+
+.board-link-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 16;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.board-node {
+  position: absolute;
+  width: 156px;
+  padding: 12px 12px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  color: var(--ink);
+  font-family: var(--sans);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.board-node:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.board-node.dragging {
+  cursor: grabbing;
+  transition: none;
+  transform: scale(1.04);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+  z-index: 5;
+}
+
+.board-node.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 0 20px var(--accent-glow);
+}
+
+.board-pin {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent-glow), inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+}
+
+.board-node-icon {
+  font-size: 16px;
+}
+
+.board-node-tag {
+  display: block;
+  font-family: var(--type);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.board-node-title {
+  display: block;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  margin-top: 2px;
+  line-height: 1.25;
+}
+
+.board-node-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+/* type accents */
+.board-person { border-top: 3px solid #c8973a; }
+.board-person .board-pin { background: #c8973a; }
+
+.board-evidence { border-top: 3px solid #b08968; }
+.board-evidence .board-pin { background: #b08968; }
+
+.board-event { border-top: 3px solid #4f8a8a; }
+.board-event .board-pin { background: #4f8a8a; }
+
+.board-question { border-top: 3px solid #9a7fa6; }
+.board-question .board-pin { background: #9a7fa6; }
+
+@media (max-width: 640px) {
+  .board-canvas {
+    height: 460px;
+  }
+  .board-node {
+    width: 138px;
+    padding: 10px;
+  }
+  .board-hint {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}
