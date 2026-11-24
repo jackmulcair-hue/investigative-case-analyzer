@@ -33,7 +33,8 @@ const state = {
     ['Cash was misplaced during handover', 42],
     ['Unauthorised removal by someone with access', 35],
     ['Amount was recorded incorrectly', 23]
-  ]
+  ],
+  board: JSON.parse(localStorage.getItem('clarity-board') || 'null') || { positions: {}, links: [] }
 };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
@@ -41,6 +42,10 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 function persist() {
   localStorage.setItem('clarity-mode', state.mode);
   document.documentElement.classList.toggle('kids-mode', state.mode === 'kids');
+}
+
+function persistBoard() {
+  localStorage.setItem('clarity-board', JSON.stringify(state.board));
 }
 
 function analysisSummaryHtml(analysis) {
@@ -89,6 +94,7 @@ function app() {
           ${nav('case', 'Case', '▣')}
           ${nav('timeline', 'Timeline', '⏱')}
           ${nav('evidence', 'Evidence', '◯')}
+          ${nav('board', 'Board', '🖇')}
           ${nav('questions', 'Questions', '❓')}
           ${nav('analysis', 'Analysis', '◎')}
           ${nav('report', 'Report', '▤')}
@@ -106,6 +112,9 @@ function app() {
       </main>
     </div>
   `;
+  if (state.view === 'board' && window.ClarityBoard) {
+    ClarityBoard.init(document.getElementById('board-root'), state, persistBoard);
+  }
 }
 
 function nav(id, label, icon) {
@@ -127,6 +136,7 @@ function renderView() {
   if (state.view === 'case') return caseView();
   if (state.view === 'timeline') return timelineView();
   if (state.view === 'evidence') return evidenceView();
+  if (state.view === 'board') return boardView();
   if (state.view === 'questions') return questionsView();
   if (state.view === 'analysis') return analysisView();
   if (state.view === 'report') return reportView();
@@ -248,6 +258,14 @@ function evidenceView() {
       </div>
       <button class="btn primary" style="width: 100%; margin-top: 12px;" onclick="addEvidence()">+ Evidence</button>
     </div>
+  `;
+}
+
+function boardView() {
+  const kid = state.mode === 'kids';
+  return `
+    ${heading(kid ? '🖇 Connection Board' : '🖇 Evidence Board', kid ? 'Who & what go together?' : 'Link clues to suspects', kid ? 'Move the cards and join the dots.' : 'Drag nodes to arrange. Turn on Link mode, then tap two nodes to connect them. Tap a string to remove it.')}
+    <div class="board-root" id="board-root"></div>
   `;
 }
 
