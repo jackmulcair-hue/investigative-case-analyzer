@@ -101,6 +101,9 @@
     return {
       headline: mode === 'kids' ? 'Gentle mystery guide' : 'Evidence-first intelligence review',
       status: mode === 'kids' ? 'Calm, fair, and curious' : 'Cautious and explainable',
+      summary: mode === 'kids'
+        ? 'Check one fact at a time, ask kindly, and agree a safe next step with a trusted adult.'
+        : 'Verify the timeline and access records against independent sources before drawing any conclusion.',
       disclaimer: mode === 'kids' ? 'People can look worried or forget things without doing anything wrong.' : 'Behaviour and body language are context clues only. This tool cannot detect lies, diagnose traits, identify criminals, or replace emergency, safeguarding, legal, or professional help.',
       sections: [
         { heading: mode === 'kids' ? 'What we can check' : 'Case snapshot', items: [`${text(safe.case && safe.case.title) || 'Untitled case'}`, `${(safe.evidence || []).length} evidence item(s), ${(safe.events || []).length} timeline event(s), ${(safe.people || []).length} person record(s)`] },
