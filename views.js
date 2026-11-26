@@ -225,6 +225,16 @@ function workspaceView() {
   `;
 }
 
+// ─── Evidence board ───
+function boardView() {
+  return `
+    ${heading('🖇 Board', 'Evidence Board', 'Drag cards to arrange. Turn on Link mode, then tap two cards to connect them. Tap a string to remove it.')}
+    <div class="card board-card">
+      <div id="board-root"></div>
+    </div>
+  `;
+}
+
 // ─── Analysis (12 categories) ───
 function analysisView() {
   const a = state.analysis;

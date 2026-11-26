@@ -108,6 +108,7 @@ function app() {
             ${nav('case', 'Case', '📋')}
             ${nav('timeline', 'Timeline', '⏱')}
             ${nav('evidence', 'Evidence', '📄')}
+            ${nav('board', 'Board', '🖇')}
             ${nav('workspace', 'Workspace', '🔗')}
             ${nav('analysis', 'Analysis', '🧩')}
             ${nav('questions', 'Questions', '❓')}
@@ -128,6 +129,10 @@ function app() {
   if (state.view === 'workspace' && state.current) {
     const container = document.getElementById('workspace-container');
     if (container) ClarityWorkspace.render(state.current, container);
+  }
+  if (state.view === 'board' && state.current && window.ClarityBoard) {
+    const container = document.getElementById('board-root');
+    if (container) ClarityBoard.init(container, state.current, () => ClarityStorage.saveInvestigation(state.current));
   }
 }
 
@@ -158,6 +163,7 @@ function renderView() {
   if (state.view === 'case') return caseView();
   if (state.view === 'timeline') return timelineView();
   if (state.view === 'evidence') return evidenceView();
+  if (state.view === 'board') return boardView();
   if (state.view === 'workspace') return workspaceView();
   if (state.view === 'analysis') return analysisView();
   if (state.view === 'questions') return questionsView();
