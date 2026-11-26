@@ -18,19 +18,20 @@
   }
   function trim(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 
-  function buildNodes(state) {
+  function buildNodes(inv) {
     var nodes = [];
-    (state.people || []).forEach(function (p, i) {
-      nodes.push({ id: 'p-' + i, type: 'person', title: p.name || 'Unnamed', sub: p.role || '' });
+    (inv.people || []).forEach(function (p) {
+      nodes.push({ id: 'p:' + p.id, type: 'person', title: p.name || 'Unnamed', sub: p.role || '' });
     });
-    (state.evidence || []).forEach(function (e, i) {
-      nodes.push({ id: 'e-' + i, type: 'evidence', title: e.title || 'Evidence', sub: (e.kind || '') + (e.strength ? ' · ' + e.strength : '') });
+    (inv.evidence || []).forEach(function (e) {
+      nodes.push({ id: 'e:' + e.id, type: 'evidence', title: e.title || 'Evidence', sub: (e.kind || '') + (e.strength ? ' · ' + e.strength : '') });
     });
-    (state.events || []).forEach(function (t, i) {
-      nodes.push({ id: 't-' + i, type: 'event', title: t[0] || 'Time', sub: trim(t[1] || 'Event', 38) });
+    (inv.events || []).forEach(function (t) {
+      nodes.push({ id: 't:' + t.id, type: 'event', title: t.time || 'Time', sub: trim(t.description || 'Event', 38) });
     });
-    (state.questions || []).forEach(function (q, i) {
-      nodes.push({ id: 'q-' + i, type: 'question', title: 'Open question', sub: trim(q || '', 64) });
+    (inv.questions || []).forEach(function (q) {
+      var text = typeof q === 'string' ? q : (q.text || '');
+      nodes.push({ id: 'q:' + (typeof q === 'string' ? text : q.id), type: 'question', title: 'Open question', sub: trim(text, 64) });
     });
     return nodes;
   }
@@ -55,10 +56,10 @@
     });
   }
 
-  function init(root, state, persist) {
-    if (!state.board) state.board = { positions: {}, links: [] };
-    var board = state.board;
-    var nodes = buildNodes(state);
+  function init(root, inv, persist) {
+    if (!inv.board) inv.board = { positions: {}, links: [] };
+    var board = inv.board;
+    var nodes = buildNodes(inv);
     var ids = {};
     nodes.forEach(function (n) { ids[n.id] = true; });
     board.links = board.links.filter(function (l) { return ids[l.from] && ids[l.to] && l.from !== l.to; });
@@ -262,8 +263,8 @@
 
     // --- keep lines aligned on resize ---
     function onResize() { placeNodes(); drawLinks(); }
-    if (root.__clarityResize) window.removeEventListener('resize', root.__clarityResize);
-    root.__clarityResize = onResize;
+    if (window.__clarityBoardResize) window.removeEventListener('resize', window.__clarityBoardResize);
+    window.__clarityBoardResize = onResize;
     window.addEventListener('resize', onResize);
   }
 
